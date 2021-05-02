@@ -3,20 +3,36 @@
 #include <string.h>
 
 #define Mtam 15
-int PRI[Mtam];
-int TP[Mtam];
-int TP2[Mtam];
-int TC[Mtam];
-int TEIOA[Mtam];
-int TEIOB[Mtam];
-int TEIOC[Mtam];
-int AP[Mtam];
-int BP[Mtam];
-int AIO[Mtam];
-int BIO[Mtam];
-int CIO[Mtam];
-int tam = 0;
 
+
+//lista que recebem os dados de cada processo
+int PRI[Mtam];    //Prioridade
+int TP[Mtam];     //Guarda o tempo restante 
+int TP2[Mtam];    //Guarda o tempo total 
+int TC[Mtam];     //Guarda o tempo de entrada 
+int TEIOA[Mtam];  //Guarda o instante de uma I/O, A
+int TEIOB[Mtam];  //Guarda o instante de uma I/O, B
+int TEIOC[Mtam];  //Guarda o instante de uma I/O, C
+
+//filas de execução
+int AP[Mtam];     //fila de alta prioridade
+int BP[Mtam];     //fila de baixa prioridade
+int AIO[Mtam];    //fila da I/O A
+int BIO[Mtam];    //fila da I/O B
+int CIO[Mtam];    //fila da I/O C
+
+//guarda a quantidade de processos
+int tam = 0;   
+
+//cicle time duration
+int cicle_duration = 5;
+
+//I/0 time duration
+int A_duration = 4;
+int B_duration = 7;
+int C_duration = 6;
+
+//trata os dados de I/0
 void entrada() {
 
    int j;
@@ -102,7 +118,7 @@ void shiftl(int A[]){
    A[tam-1] = 0;
 }
 
-//coloca o valor na primeira posição = 0
+//coloca o valor na primeira posição = 0 do vetor
 void append(int A[], int elem){
    int i = 0;
    while(A[i] != 0){
@@ -140,23 +156,34 @@ int main(){
    FILE *fp;
    fp = fopen("output", "w");
    
+   //Guarda o tempo total de processo restante
    int pt = 0;
-   int ie = 0;
-   int ct = 1;
-   int ut = 0;
-   int ac = 0;
-   int bc = 0;
-   int cc = 0;
 
+   //Guarda o index do processo em execução
+   int ie = 0;
+
+   //Guarda a unidade de tempo em que se encontra a execução
+   int ut = 0;
+   
+   //Contadores do tempo de ciclo
+   int cicle_timer = 1;     //de execução de processo
+   int A_timer = 0;     //de execução de uma I/O, A 
+   int B_timer = 0;     //de execução de uma I/O, B 
+   int C_timer = 0;     //de execução de uma I/O, C 
+
+   //printa o header do output
    fprintf(fp,"|     ");
    for(int i=1;i<=tam;i++)
       fprintf(fp,"P%d  ",i);
-   fprintf(fp,"|\n");
+   fprintf(fp,"|");
+   fprintf(fp,"  A  B  C  |\n");
 
    do{
       
+      //incrementa a unidade de tempo em que se encontra o processamento
       ut ++;
 
+      //printa cada linha do output
       fprintf(fp,"|%3.0d: ",ut);
       for(int k=0;k<tam;k++){
          if(k != ie){
@@ -165,15 +192,11 @@ int main(){
             fprintf(fp,"II  ");
          }
       }
-      fprintf(fp,"|\n");
+      fprintf(fp,"|  ");
 
       //contabiliza a execução de uma ut do processo
-      TP[ie]--;
-
-      //checa se existe algum processo ainda a ser terminado
-      pt = pttotal();
-      if(pt == 0){
-         break;
+      if(ie != -1){
+         TP[ie]--;
       }
 
       //checa se houve entrada de um processo novo
@@ -183,70 +206,100 @@ int main(){
          }
       }
 
-      //checa se algum processo finalizou sua I/O
+      //checa se algum processo finalizou uma operação A de I/O
       if(AIO[0]!=0){
-         ac+=1;
-         if(ac==4){
-            ac=0;
+         A_timer+=1;
+         fprintf(fp,"%d  ",AIO[0]);
+         if(A_timer==A_duration){
+            A_timer=0;
             append(AP, AIO[0]);
             shiftl(AIO);
          }
+      }else{
+         fprintf(fp,"   ");
       }
 
+      //checa se algum processo finalizou uma operação B de I/O
       if(BIO[0]!=0){
-         bc+=1;
-         if(bc==7){
-            bc=0;
+         B_timer+=1;
+         fprintf(fp,"%d  ",BIO[0]);
+         if(B_timer==B_duration){
+            B_timer=0;
             append(AP, BIO[0]);
             shiftl(BIO);
          }
+      }else{
+         fprintf(fp,"   ");
       }
 
+      //checa se algum processo finalizou uma operação C de I/O
       if(CIO[0]!=0){
-         cc+=1;
-         if(cc==6){
-            cc=0;
+         C_timer+=1;
+         fprintf(fp,"%d  |\n",CIO[0]);
+         if(C_timer==C_duration){
+            C_timer=0;
             append(AP, CIO[0]);
             shiftl(CIO);
          }
+      }else{
+         fprintf(fp,"   |\n");
+      }
+
+      //checa se existe algum processo ainda a ser terminado
+      pt = pttotal();
+      if(pt == 0){
+         break;
+      }
+
+      //caso não tenha processo em execução ele verifica se tem algum na fila
+      if(ie == -1){
+         ie = changeP(ie);
+         continue;
       }
 
       //verifica se o processo do ciclo atual ja foi finalizado
       if(TP[ie]==0){
-         ct = 0;
+         cicle_timer = 0;
          ie = changeP(ie);
       }
 
-      //checa se o processo entrou em uma operação de I/O
+      //checa se o processo entrou em uma operação de I/O A
       if((TP2[ie] - TP[ie] == TEIOA[ie]) && ((TP2[ie] - TP[ie]) >0)){
-         ct =0;
+         cicle_timer =0;
          TEIOA[ie] = 0;
          append(AIO, ie+1);
          ie = changeP(ie);
       }
+
+      //checa se o processo entrou em uma operação de I/O B
       if((TP2[ie] - TP[ie] == TEIOB[ie]) && (TP2[ie] - TP[ie]) >0){
-         ct =0;
+         cicle_timer =0;
          TEIOB[ie] = 0;
          append(BIO, ie+1);
          ie = changeP(ie);
       }
+
+      //checa se o processo entrou em uma operação de I/O C
       if((TP2[ie] - TP[ie] == TEIOC[ie]) && (TP2[ie] - TP[ie]) >0){
-         ct =0;
+         cicle_timer =0;
          TEIOC[ie] = 0;
          append(CIO, ie+1);
          ie = changeP(ie);
       }
 
       //verifica se o ciclo atual ja foi concluido
-      if(ct == 5){
-         ct = 0;
+      if(cicle_timer == cicle_duration){
+         cicle_timer = 0;
          append(BP, ie+1);
          ie = changeP(ie);
       }
-      ct+=1;
+      
+      //incrementa o contador do ciclo atual
+      cicle_timer+=1;
 
    }while(1);
 
    fclose(fp);
+   
    return 0;
 }
