@@ -254,13 +254,13 @@ int main(){
          break;
       }
 
-      // caso não tenha processo em execução ele verifica se tem algum na fila
+      // Caso não tenha processo em execução ele verifica se tem algum na fila
       if(pid == -1){
          pid = change_running_process(pid);
          continue;
       }
 
-      // verifica se o processo do ciclo atual ja foi finalizado
+      // Verifica se o processo do ciclo atual ja foi finalizado
       if(time_left[pid]==0){
          process_cicle_timer = 0;
          pid = change_running_process(pid);
