@@ -112,7 +112,8 @@ void entrada() {
    
 //desloca todos os elementos do array para a esquerda
 void shiftl(int A[]){
-   for(int i=0;i<tam-1;i++){
+   int i;
+   for(i=0;i<tam-1;i++){
       A[i]=A[i+1];
    }
    A[tam-1] = 0;
@@ -130,7 +131,8 @@ void append(int A[], int elem){
 //verifica quanto tempo de processo ainda resta ao todo para ser executado
 int pttotal(){
    int soma = 0;
-   for(int i=0;i<tam;i++){
+   int i;
+   for(i=0;i<tam;i++){
       soma += TP[i];
    }
 
@@ -173,7 +175,8 @@ int main(){
 
    //printa o header do output
    fprintf(fp,"|     ");
-   for(int i=1;i<=tam;i++)
+   int i;
+   for(i=1;i<=tam;i++)
       fprintf(fp,"P%d  ",i);
    fprintf(fp,"|");
    fprintf(fp,"  A  B  C  |\n");
@@ -185,7 +188,8 @@ int main(){
 
       //printa cada linha do output
       fprintf(fp,"|%3.0d: ",ut);
-      for(int k=0;k<tam;k++){
+      int k;
+      for(k=0;k<tam;k++){
          if(k != ie){
             fprintf(fp,"    ");
          }else{
@@ -200,7 +204,8 @@ int main(){
       }
 
       //checa se houve entrada de um processo novo
-      for(int i = 0;i<tam;i++){
+      int i;
+      for(i = 0;i<tam;i++){
          if(TC[i] == ut){
             append(AP, i+1);
          }
