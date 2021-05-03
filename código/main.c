@@ -2,53 +2,52 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define Mtam 15
+#define max_size 15
 
+// Listas que recebem os dados de cada processo
+int priority[max_size];             // Guarda as prioridades
+int time_left[max_size];            // Guarda o tempo restante 
+int total_time[max_size];           // Guarda o tempo total 
+int input_time[max_size];           // Guarda o tempo de read_input_file 
+int disk_instant_time[max_size];    // Guarda o instante de uma I/O, disk
+int tape_instant_time[max_size];    // Guarda o instante de uma I/O, tape
+int printer_instant_time[max_size]; // Guarda o instante de uma I/O, printer
 
-//lista que recebem os dados de cada processo
-int PRI[Mtam];    //Prioridade
-int TP[Mtam];     //Guarda o tempo restante 
-int TP2[Mtam];    //Guarda o tempo total 
-int TC[Mtam];     //Guarda o tempo de entrada 
-int TEIOA[Mtam];  //Guarda o instante de uma I/O, A
-int TEIOB[Mtam];  //Guarda o instante de uma I/O, B
-int TEIOC[Mtam];  //Guarda o instante de uma I/O, C
+// Filas de execução
+int high_priority_queue[max_size];     // fila de alta prioridade
+int low_priority_queue[max_size];      // fila de baixa prioridade
+int disk_IO_queue[max_size];           // fila de I/O disco
+int tape_IO_queue[max_size];           // fila de I/O tape
+int printer_IO_queue[max_size];        // fila de I/O printer
 
-//filas de execução
-int AP[Mtam];     //fila de alta prioridade
-int BP[Mtam];     //fila de baixa prioridade
-int AIO[Mtam];    //fila da I/O A
-int BIO[Mtam];    //fila da I/O B
-int CIO[Mtam];    //fila da I/O C
+// guarda a quantidade de processos
+int size = 0;   
 
-//guarda a quantidade de processos
-int tam = 0;   
+// fatia de tempo do processo
+int time_slice = 5;
 
-//cicle time duration
-int cicle_duration = 5;
+// I/0 time duration
+int disk_duration = 4;
+int tape_duration = 7;
+int printer_duration = 6;
 
-//I/0 time duration
-int A_duration = 4;
-int B_duration = 7;
-int C_duration = 6;
-
-//trata os dados de I/0
-void entrada() {
+//  Lê e trata o arquivo de entrada
+void read_input_file() {
 
    int j;
-   for (j = 0; j < Mtam; j++){
-      PRI[j] = 0;
-      TP[j] = 0;
-      TP2[j] = 0;
-      TC[j] = 0;
-      TEIOA[j] = 0;
-      TEIOB[j] = 0;
-      TEIOC[j] = 0;
-      AP[j]= 0;
-      BP[j]= 0;
-      AIO[j]= 0;
-      BIO[j]= 0;
-      CIO[j]= 0;
+   for (j = 0; j < max_size; j++){
+      priority[j] = 0;
+      time_left[j] = 0;
+      total_time[j] = 0;
+      input_time[j] = 0;
+      disk_instant_time[j] = 0;
+      tape_instant_time[j] = 0;
+      printer_instant_time[j] = 0;
+      high_priority_queue[j]= 0;
+      low_priority_queue[j]= 0;
+      disk_IO_queue[j]= 0;
+      tape_IO_queue[j]= 0;
+      printer_IO_queue[j]= 0;
    }
 
    FILE *fPointer;
@@ -61,136 +60,135 @@ void entrada() {
    int pc = 0;
 
    while(!feof(fPointer)){
-      tam +=1;
+      size +=1;
       fgets(singleLine, 150, fPointer);
-      // puts(singleLine);
+      //  puts(singleLine);
       sub = strtok(singleLine,";");
       count = 0;
 
       while(sub != NULL){
          count = count + 1;
 
-         // printf ("SUB: %s\n", sub);
+         //  printf ("SUB: %s\n", sub);
         
          switch (count){
             case 1:
                break;
 
             case 2:
-               PRI[pc] = atoi(sub);
+               priority[pc] = atoi(sub);
                break;
 
             case 3:
-               TP[pc] = atoi(sub);
-               TP2[pc] = atoi(sub);
+               time_left[pc] = atoi(sub);
+               total_time[pc] = atoi(sub);
                break;
 
             case 4:
-               TC[pc] = atoi(sub);
+               input_time[pc] = atoi(sub);
                break;
 
             case 5:
-               TEIOA[pc] = atoi(sub);
+               disk_instant_time[pc] = atoi(sub);
                break;
 
             case 6:
-               TEIOB[pc] = atoi(sub);
+               tape_instant_time[pc] = atoi(sub);
                break;
 
             case 7:
-               TEIOC[pc] = atoi(sub);
+               printer_instant_time[pc] = atoi(sub);
                break; 
          }
 
          sub = strtok(NULL,";");
       }
-      //printf ("count: %d\n",count);
+      // printf ("count: %d\n",count);
       pc+=1;
    }
    
 }
    
-//desloca todos os elementos do array para a esquerda
-void shiftl(int A[]){
+//  Desloca todos os elementos do array para a esquerda
+void shiftl(int a[]){
    int i;
-   for(i=0;i<tam-1;i++){
-      A[i]=A[i+1];
+   for(i=0;i<size-1;i++){
+      a[i]=a[i+1];
    }
-   A[tam-1] = 0;
+   a[size-1] = 0;
 }
 
-//coloca o valor na primeira posição = 0 do vetor
-void append(int A[], int elem){
+//  Coloca o valor na primeira posição = 0 do vetor
+void append(int a[], int elem){
    int i = 0;
-   while(A[i] != 0){
+   while(a[i] != 0){
       i++;
    }
-   A[i] = elem;
+   a[i] = elem;
 }
 
-//verifica quanto tempo de processo ainda resta ao todo para ser executado
-int pttotal(){
-   int soma = 0;
+//  Verifica quanto tempo de processo ainda resta ao todo para ser executado
+int total_process_time_left(){
+   int sum = 0;
    int i;
-   for(i=0;i<tam;i++){
-      soma += TP[i];
+   for(i=0;i<size;i++){
+      sum += time_left[i];
    }
-
-   return soma;
+   return sum;
 }
 
-//pega um novo processo das filas e coloca em execução
-int changeP(int ie){
-   ie = AP[0];
-   shiftl(AP);
-   if(ie==0){
-      ie = BP[0];
-      shiftl(BP);
+//  Pega um novo processo das filas e coloca em execução
+int change_running_process(int pid){
+   pid = high_priority_queue[0];
+   shiftl(high_priority_queue);
+   if(pid==0){
+      pid = low_priority_queue[0];
+      shiftl(low_priority_queue);
    }
-   return ie - 1;
+   return pid - 1;
 }
 
 
 int main(){
 
-   entrada();
+   read_input_file();
 
    FILE *fp;
    fp = fopen("output", "w");
    
-   //Guarda o tempo total de processo restante
-   int pt = 0;
+   // Guarda o tempo total de processo restante
+   int total_time_left = 0;
 
-   //Guarda o index do processo em execução
-   int ie = 0;
+   // Guarda o index do processo em execução
+   int pid = 0;
 
-   //Guarda a unidade de tempo em que se encontra a execução
-   int ut = 0;
+   // Guarda a unidade de tempo em que se encontra a execução
+   int running_current_time = 0;
    
-   //Contadores do tempo de ciclo
-   int cicle_timer = 1;     //de execução de processo
-   int A_timer = 0;     //de execução de uma I/O, A 
-   int B_timer = 0;     //de execução de uma I/O, B 
-   int C_timer = 0;     //de execução de uma I/O, C 
+   // Contadores do tempo de ciclo
+   int process_cicle_timer = 1;  // de execução de processo
+   int disk_cicle_timer = 0;     // de execução de uma I/O, disk 
+   int tape_cicle_timer = 0;     // de execução de uma I/O, tape 
+   int printer_cicle_timer = 0;  // de execução de uma I/O, printer 
 
-   //printa o header do output
+   // Imprime o header do output
    fprintf(fp,"|     ");
    int i;
-   for(i=1;i<=tam;i++)
+   for(i=1;i<=size;i++)
       fprintf(fp,"P%d  ",i);
    fprintf(fp,"|");
-   fprintf(fp,"  A  B  C  |\n");
+   fprintf(fp," Disk Tape Printer |\n");
 
    do{
       
-      //incrementa a unidade de tempo em que se encontra o processamento
-      ut ++;
+      // Incrementa a unidade de tempo em que se encontra o processamento
+      running_current_time ++;
 
-      //printa cada linha do output
-      fprintf(fp,"|%3.0d: ",ut);
+      // Imprime cada linha do output
+      fprintf(fp,"|%3.0d: ",running_current_time);
       int k;
-      for(k=0;k<tam;k++){
-         if(k != ie){
+      for(k=0;k<size;k++){
+         if(k != pid){
             fprintf(fp,"    ");
          }else{
             fprintf(fp,"II  ");
@@ -198,109 +196,109 @@ int main(){
       }
       fprintf(fp,"|  ");
 
-      //contabiliza a execução de uma ut do processo
-      if(ie != -1){
-         TP[ie]--;
+      // Contabiliza a execução de uma unidade de tempo do processo
+      if(pid != -1){
+         time_left[pid]--;
       }
 
-      //checa se houve entrada de um processo novo
+      // Checa se houve a entrada de um processo novo
       int i;
-      for(i = 0;i<tam;i++){
-         if(TC[i] == ut){
-            append(AP, i+1);
+      for(i = 0;i<size;i++){
+         if(input_time[i] == running_current_time){
+            append(high_priority_queue, i+1);
          }
       }
 
-      //checa se algum processo finalizou uma operação A de I/O
-      if(AIO[0]!=0){
-         A_timer+=1;
-         fprintf(fp,"%d  ",AIO[0]);
-         if(A_timer==A_duration){
-            A_timer=0;
-            append(AP, AIO[0]);
-            shiftl(AIO);
-         }
-      }else{
-         fprintf(fp,"   ");
-      }
-
-      //checa se algum processo finalizou uma operação B de I/O
-      if(BIO[0]!=0){
-         B_timer+=1;
-         fprintf(fp,"%d  ",BIO[0]);
-         if(B_timer==B_duration){
-            B_timer=0;
-            append(AP, BIO[0]);
-            shiftl(BIO);
+      // Checa se algum processo finalizou uma operação disco
+      if(disk_IO_queue[0]!=0){
+         disk_cicle_timer+=1;
+         fprintf(fp,"%d     ",disk_IO_queue[0]);
+         if(disk_cicle_timer==disk_duration){
+            disk_cicle_timer=0;
+            append(low_priority_queue, disk_IO_queue[0]);
+            shiftl(disk_IO_queue);
          }
       }else{
-         fprintf(fp,"   ");
+         fprintf(fp,"      ");
       }
 
-      //checa se algum processo finalizou uma operação C de I/O
-      if(CIO[0]!=0){
-         C_timer+=1;
-         fprintf(fp,"%d  |\n",CIO[0]);
-         if(C_timer==C_duration){
-            C_timer=0;
-            append(AP, CIO[0]);
-            shiftl(CIO);
+      // Checa se algum processo finalizou uma operação de fita magnética
+      if(tape_IO_queue[0]!=0){
+         tape_cicle_timer+=1;
+         fprintf(fp,"%d    ",tape_IO_queue[0]);
+         if(tape_cicle_timer==tape_duration){
+            tape_cicle_timer=0;
+            append(high_priority_queue, tape_IO_queue[0]);
+            shiftl(tape_IO_queue);
          }
       }else{
-         fprintf(fp,"   |\n");
+         fprintf(fp,"     ");
       }
 
-      //checa se existe algum processo ainda a ser terminado
-      pt = pttotal();
-      if(pt == 0){
+      // Checa se algum processo finalizou uma operação de impressora
+      if(printer_IO_queue[0]!=0){
+         printer_cicle_timer+=1;
+         fprintf(fp,"%d     |\n",printer_IO_queue[0]);
+         if(printer_cicle_timer==printer_duration){
+            printer_cicle_timer=0;
+            append(high_priority_queue, printer_IO_queue[0]);
+            shiftl(printer_IO_queue);
+         }
+      }else{
+         fprintf(fp,"      |\n");
+      }
+
+      // Checa se existe algum processo ainda a ser terminado
+      total_time_left = total_process_time_left();
+      if(total_time_left == 0){
          break;
       }
 
-      //caso não tenha processo em execução ele verifica se tem algum na fila
-      if(ie == -1){
-         ie = changeP(ie);
+      // caso não tenha processo em execução ele verifica se tem algum na fila
+      if(pid == -1){
+         pid = change_running_process(pid);
          continue;
       }
 
-      //verifica se o processo do ciclo atual ja foi finalizado
-      if(TP[ie]==0){
-         cicle_timer = 0;
-         ie = changeP(ie);
+      // verifica se o processo do ciclo atual ja foi finalizado
+      if(time_left[pid]==0){
+         process_cicle_timer = 0;
+         pid = change_running_process(pid);
       }
 
-      //checa se o processo entrou em uma operação de I/O A
-      if((TP2[ie] - TP[ie] == TEIOA[ie]) && ((TP2[ie] - TP[ie]) >0)){
-         cicle_timer =0;
-         TEIOA[ie] = 0;
-         append(AIO, ie+1);
-         ie = changeP(ie);
+      // Checa se o processo entrou em uma operação de I/O de disco
+      if((total_time[pid] - time_left[pid] == disk_instant_time[pid]) && ((total_time[pid] - time_left[pid]) >0)){
+         process_cicle_timer =0;
+         disk_instant_time[pid] = 0;
+         append(disk_IO_queue, pid+1);
+         pid = change_running_process(pid);
       }
 
-      //checa se o processo entrou em uma operação de I/O B
-      if((TP2[ie] - TP[ie] == TEIOB[ie]) && (TP2[ie] - TP[ie]) >0){
-         cicle_timer =0;
-         TEIOB[ie] = 0;
-         append(BIO, ie+1);
-         ie = changeP(ie);
+      // Checa se o processo entrou em uma operação de I/O de fita magnética
+      if((total_time[pid] - time_left[pid] == tape_instant_time[pid]) && (total_time[pid] - time_left[pid]) >0){
+         process_cicle_timer =0;
+         tape_instant_time[pid] = 0;
+         append(tape_IO_queue, pid+1);
+         pid = change_running_process(pid);
       }
 
-      //checa se o processo entrou em uma operação de I/O C
-      if((TP2[ie] - TP[ie] == TEIOC[ie]) && (TP2[ie] - TP[ie]) >0){
-         cicle_timer =0;
-         TEIOC[ie] = 0;
-         append(CIO, ie+1);
-         ie = changeP(ie);
+      // Checa se o processo entrou em uma operação de I/O de impressora
+      if((total_time[pid] - time_left[pid] == printer_instant_time[pid]) && (total_time[pid] - time_left[pid]) >0){
+         process_cicle_timer =0;
+         printer_instant_time[pid] = 0;
+         append(printer_IO_queue, pid+1);
+         pid = change_running_process(pid);
       }
 
-      //verifica se o ciclo atual ja foi concluido
-      if(cicle_timer == cicle_duration){
-         cicle_timer = 0;
-         append(BP, ie+1);
-         ie = changeP(ie);
+      // Verifica se o ciclo atual ja foi concluido
+      if(process_cicle_timer == time_slice){
+         process_cicle_timer = 0;
+         append(low_priority_queue, pid+1);
+         pid = change_running_process(pid);
       }
       
-      //incrementa o contador do ciclo atual
-      cicle_timer+=1;
+      // Incrementa o contador do ciclo atual
+      process_cicle_timer+=1;
 
    }while(1);
 
