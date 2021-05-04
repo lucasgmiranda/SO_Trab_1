@@ -148,7 +148,7 @@ int change_running_process(){
    return pid - 1;
 }
 
-// reordena a lista pelo processo de menor prioridade
+// Reordena a lista pelo processo de menor prioridade
 void append_by_priority(int process[]){
    int i;
    for(i=0;i<size;i++){
@@ -191,7 +191,7 @@ int main(){
    // Guarda o tempo total de processo restante
    int total_time_left = 0;
 
-   // Guarda o index do processo em execução
+   // Guarda o id do processo em execução
    int pid = -1;
 
    // Guarda a unidade de tempo em que se encontra a execução
@@ -211,9 +211,10 @@ int main(){
    fprintf(fp,"|");
    fprintf(fp," Disk Tape Printer |\n");
 
-   //checa se existe algum processo com Tempo de chegada 0
+   // Checa se existe algum processo com tempo de chegada 0
    int i;
-   int temp_queue_append[size];
+   int* temp_queue_append;
+   temp_queue_append = (int*)calloc(size, sizeof(int));
    for(i = 0;i<size;i++){
       if(input_time[i] == 0){
          temp_queue_append[i] = i+1;
@@ -248,7 +249,8 @@ int main(){
 
       // Checa se houve a entrada de um processo novo
       int i;
-      int temp_queue_append[size];
+      int* temp_queue_append;
+      temp_queue_append = (int*)calloc(size, sizeof(int));
       for(i = 0;i<size;i++){
          if(input_time[i] == running_current_time){
             temp_queue_append[i] = i+1;
