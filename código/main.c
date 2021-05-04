@@ -138,8 +138,8 @@ int total_process_time_left(){
 }
 
 //  Pega um novo processo das filas e coloca em execução
-int change_running_process(int pid){
-   pid = high_priority_queue[0];
+int change_running_process(){
+   int pid = high_priority_queue[0];
    shiftl(high_priority_queue);
    if(pid==0){
       pid = low_priority_queue[0];
@@ -148,10 +148,42 @@ int change_running_process(int pid){
    return pid - 1;
 }
 
+// reordena a lista pelo processo de menor prioridade
+void append_by_priority(int process[]){
+   int i;
+   for(i=0;i<size;i++){
+      int j;
+      if(process[i]==0){
+         continue;
+      }
+      for(j=i;j<size;j++){
+         if(process[j]==0){
+            continue;
+         }
+         if(priority[process[j]-1]<priority[process[i]-1]){
+            int aux = process[j];
+            process[j] = process[i];
+            process[i] = aux;
+         }
+      }
+   }
+
+   for(i=0;i<size;i++){
+      if(process[i]!=0){
+         append(high_priority_queue,process[i]);
+      }
+   }
+}
 
 int main(){
 
    read_input_file();
+
+   // if(1){
+   //    int pri[6] = {1,2,0,4,0,6};
+   //    append_by_priority(pri);
+   //    printf("[%d,%d,%d,%d,%d,%d]",pri[0],pri[1],pri[2],pri[3],pri[4],pri[5]);
+   // }
 
    FILE *fp;
    fp = fopen("output", "w");
@@ -160,7 +192,7 @@ int main(){
    int total_time_left = 0;
 
    // Guarda o index do processo em execução
-   int pid = 0;
+   int pid = -1;
 
    // Guarda a unidade de tempo em que se encontra a execução
    int running_current_time = 0;
@@ -173,11 +205,24 @@ int main(){
 
    // Imprime o header do output
    fprintf(fp,"|     ");
-   int i;
-   for(i=1;i<=size;i++)
-      fprintf(fp,"P%d  ",i);
+   int j;
+   for(j=1;j<=size;j++)
+      fprintf(fp,"P%d  ",j);
    fprintf(fp,"|");
    fprintf(fp," Disk Tape Printer |\n");
+
+   //checa se existe algum processo com Tempo de chegada 0
+   int i;
+   int temp_queue_append[size];
+   for(i = 0;i<size;i++){
+      if(input_time[i] == 0){
+         temp_queue_append[i] = i+1;
+      }else{
+         temp_queue_append[i] = 0;
+      }
+   }
+   append_by_priority(temp_queue_append);
+   pid = change_running_process();
 
    do{
       
@@ -203,11 +248,16 @@ int main(){
 
       // Checa se houve a entrada de um processo novo
       int i;
+      int temp_queue_append[size];
       for(i = 0;i<size;i++){
          if(input_time[i] == running_current_time){
-            append(high_priority_queue, i+1);
+            temp_queue_append[i] = i+1;
+         }else{
+            temp_queue_append[i] = 0;
          }
       }
+      append_by_priority(temp_queue_append);
+
 
       // Checa se algum processo finalizou uma operação disco
       if(disk_IO_queue[0]!=0){
@@ -222,30 +272,49 @@ int main(){
          fprintf(fp,"      ");
       }
 
+      int tape_end = 0;
       // Checa se algum processo finalizou uma operação de fita magnética
       if(tape_IO_queue[0]!=0){
          tape_cicle_timer+=1;
          fprintf(fp,"%d    ",tape_IO_queue[0]);
          if(tape_cicle_timer==tape_duration){
             tape_cicle_timer=0;
-            append(high_priority_queue, tape_IO_queue[0]);
+            tape_end = tape_IO_queue[0];
             shiftl(tape_IO_queue);
          }
       }else{
          fprintf(fp,"     ");
       }
 
+      int printer_end = 0;
       // Checa se algum processo finalizou uma operação de impressora
       if(printer_IO_queue[0]!=0){
          printer_cicle_timer+=1;
          fprintf(fp,"%d     |\n",printer_IO_queue[0]);
          if(printer_cicle_timer==printer_duration){
             printer_cicle_timer=0;
-            append(high_priority_queue, printer_IO_queue[0]);
+            printer_end = printer_IO_queue[0];
             shiftl(printer_IO_queue);
          }
       }else{
          fprintf(fp,"      |\n");
+      }
+
+      // caso 2 processos saiam de uma I/O de alta prioridade é decidido pela prioridade sua posição
+      if(printer_end != 0 || tape_end != 0){
+         if(printer_end == 0){
+            append(high_priority_queue, tape_end);
+         }else if(tape_end == 0){
+            append(high_priority_queue, printer_end);
+         }else{
+            if(priority[printer_end-1]<priority[tape_end-1]){
+               append(high_priority_queue, printer_end);
+               append(high_priority_queue, tape_end);
+            }else{
+               append(high_priority_queue, tape_end);
+               append(high_priority_queue, printer_end);
+            }
+         }
       }
 
       // Checa se existe algum processo ainda a ser terminado
@@ -256,14 +325,14 @@ int main(){
 
       // Caso não tenha processo em execução ele verifica se tem algum na fila
       if(pid == -1){
-         pid = change_running_process(pid);
+         pid = change_running_process();
          continue;
       }
 
       // Verifica se o processo do ciclo atual ja foi finalizado
       if(time_left[pid]==0){
          process_cicle_timer = 0;
-         pid = change_running_process(pid);
+         pid = change_running_process();
       }
 
       // Checa se o processo entrou em uma operação de I/O de disco
@@ -271,7 +340,7 @@ int main(){
          process_cicle_timer =0;
          disk_instant_time[pid] = 0;
          append(disk_IO_queue, pid+1);
-         pid = change_running_process(pid);
+         pid = change_running_process();
       }
 
       // Checa se o processo entrou em uma operação de I/O de fita magnética
@@ -279,7 +348,7 @@ int main(){
          process_cicle_timer =0;
          tape_instant_time[pid] = 0;
          append(tape_IO_queue, pid+1);
-         pid = change_running_process(pid);
+         pid = change_running_process();
       }
 
       // Checa se o processo entrou em uma operação de I/O de impressora
@@ -287,14 +356,14 @@ int main(){
          process_cicle_timer =0;
          printer_instant_time[pid] = 0;
          append(printer_IO_queue, pid+1);
-         pid = change_running_process(pid);
+         pid = change_running_process();
       }
 
       // Verifica se o ciclo atual ja foi concluido
       if(process_cicle_timer == time_slice){
          process_cicle_timer = 0;
          append(low_priority_queue, pid+1);
-         pid = change_running_process(pid);
+         pid = change_running_process();
       }
       
       // Incrementa o contador do ciclo atual
