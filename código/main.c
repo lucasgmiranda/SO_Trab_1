@@ -54,8 +54,8 @@ void read_input_file() {
    fPointer = fopen("test.txt", "r");
 
    char singleLine[150];
-   char *sub;
-   char *sub2;
+   char *sub_string;
+   char *sub_string2;
    int count;
    int pc = 0;
 
@@ -63,45 +63,45 @@ void read_input_file() {
       size +=1;
       fgets(singleLine, 150, fPointer);
       //  puts(singleLine);
-      sub = strtok(singleLine,";");
+      sub_string = strtok(singleLine,";");
       count = 0;
 
-      while(sub != NULL){
+      while(sub_string != NULL){
          count = count + 1;
 
-         //  printf ("SUB: %s\n", sub);
+         //  printf ("sub_string: %s\n", sub_string);
         
          switch (count){
             case 1:
                break;
 
             case 2:
-               priority[pc] = atoi(sub);
+               priority[pc] = atoi(sub_string);
                break;
 
             case 3:
-               time_left[pc] = atoi(sub);
-               total_time[pc] = atoi(sub);
+               time_left[pc] = atoi(sub_string);
+               total_time[pc] = atoi(sub_string);
                break;
 
             case 4:
-               input_time[pc] = atoi(sub);
+               input_time[pc] = atoi(sub_string);
                break;
 
             case 5:
-               disk_instant_time[pc] = atoi(sub);
+               disk_instant_time[pc] = atoi(sub_string);
                break;
 
             case 6:
-               tape_instant_time[pc] = atoi(sub);
+               tape_instant_time[pc] = atoi(sub_string);
                break;
 
             case 7:
-               printer_instant_time[pc] = atoi(sub);
+               printer_instant_time[pc] = atoi(sub_string);
                break; 
          }
 
-         sub = strtok(NULL,";");
+         sub_string = strtok(NULL,";");
       }
       // printf ("count: %d\n",count);
       pc+=1;
