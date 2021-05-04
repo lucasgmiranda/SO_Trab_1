@@ -14,29 +14,29 @@
 #define tape_duration 7
 #define printer_duration 6
 
-// Duração da unidade de tempo na simulação em milissegundos
+// Duração da unidade de tempo na simulação em milissegundos (diminuir para aumentar a velocidade)
 #define simulation_unit_time 500
 
 // Listas que recebem os dados de cada processo
 int priority[max_size];                // Guarda as prioridades
 int time_left[max_size];               // Guarda o tempo restante 
 int total_time[max_size];              // Guarda o tempo total 
-int input_time[max_size];              // Guarda o tempo de read_input_file 
-int disk_instant_time[max_size];       // Guarda o instante de uma I/O, disk
-int tape_instant_time[max_size];       // Guarda o instante de uma I/O, tape
-int printer_instant_time[max_size];    // Guarda o instante de uma I/O, printer
+int input_time[max_size];              // Guarda o tempo de entrada 
+int disk_instant_time[max_size];       // Guarda o instante de uma I/O, disco
+int tape_instant_time[max_size];       // Guarda o instante de uma I/O, fita magnética
+int printer_instant_time[max_size];    // Guarda o instante de uma I/O, impressora
 
 // Filas de execução
-int high_priority_queue[max_size];     // fila de alta prioridade
-int low_priority_queue[max_size];      // fila de baixa prioridade
-int disk_IO_queue[max_size];           // fila de I/O disco
-int tape_IO_queue[max_size];           // fila de I/O tape
-int printer_IO_queue[max_size];        // fila de I/O printer
+int high_priority_queue[max_size];     // Fila de alta prioridade
+int low_priority_queue[max_size];      // Fila de baixa prioridade
+int disk_IO_queue[max_size];           // Fila de I/O disco
+int tape_IO_queue[max_size];           // Fila de I/O fita magnética
+int printer_IO_queue[max_size];        // Fila de I/O impressora
 
-// guarda a quantidade de processos
+// Guarda a quantidade de processos
 int size = 0;   
 
-//  Lê e trata o arquivo de entrada
+// Leitura e tratamento do arquivo de entrada
 void read_input_file() {
 
    int j;
@@ -67,14 +67,11 @@ void read_input_file() {
    while(!feof(fPointer)){
       size +=1;
       fgets(singleLine, 150, fPointer);
-      //  puts(singleLine);
       sub_string = strtok(singleLine,";");
       count = 0;
 
       while(sub_string != NULL){
          count = count + 1;
-
-         //  printf ("sub_string: %s\n", sub_string);
         
          switch (count){
             case 1:
@@ -108,7 +105,6 @@ void read_input_file() {
 
          sub_string = strtok(NULL,";");
       }
-      // printf ("count: %d\n",count);
       pc+=1;
    }
    
