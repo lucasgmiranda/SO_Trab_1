@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 
+//Número máximo de processos
 #define max_size 15
 
 // Listas que recebem os dados de cada processo
