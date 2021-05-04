@@ -2,16 +2,25 @@
 #include <stdlib.h>
 #include <string.h>
 
+// Número máximo de processos
 #define max_size 15
 
+// Fatia de tempo do processo
+#define time_slice 5
+
+// Tempo de duração de cada tipo de I/0
+#define disk_duration 4
+#define tape_duration 7
+#define printer_duration 6
+
 // Listas que recebem os dados de cada processo
-int priority[max_size];             // Guarda as prioridades
-int time_left[max_size];            // Guarda o tempo restante 
-int total_time[max_size];           // Guarda o tempo total 
-int input_time[max_size];           // Guarda o tempo de read_input_file 
-int disk_instant_time[max_size];    // Guarda o instante de uma I/O, disk
-int tape_instant_time[max_size];    // Guarda o instante de uma I/O, tape
-int printer_instant_time[max_size]; // Guarda o instante de uma I/O, printer
+int priority[max_size];                // Guarda as prioridades
+int time_left[max_size];               // Guarda o tempo restante 
+int total_time[max_size];              // Guarda o tempo total 
+int input_time[max_size];              // Guarda o tempo de read_input_file 
+int disk_instant_time[max_size];       // Guarda o instante de uma I/O, disk
+int tape_instant_time[max_size];       // Guarda o instante de uma I/O, tape
+int printer_instant_time[max_size];    // Guarda o instante de uma I/O, printer
 
 // Filas de execução
 int high_priority_queue[max_size];     // fila de alta prioridade
@@ -22,14 +31,6 @@ int printer_IO_queue[max_size];        // fila de I/O printer
 
 // guarda a quantidade de processos
 int size = 0;   
-
-// fatia de tempo do processo
-int time_slice = 5;
-
-// I/0 time duration
-int disk_duration = 4;
-int tape_duration = 7;
-int printer_duration = 6;
 
 //  Lê e trata o arquivo de entrada
 void read_input_file() {
@@ -51,7 +52,7 @@ void read_input_file() {
    }
 
    FILE *fPointer;
-   fPointer = fopen("test.txt", "r");
+   fPointer = fopen("input.txt", "r");
 
    char singleLine[150];
    char *sub_string;
