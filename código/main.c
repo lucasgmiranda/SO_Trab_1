@@ -1,17 +1,30 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <windows.h>
 
+// Número máximo de processos
 #define max_size 15
 
+// Fatia de tempo do processo
+#define time_slice 5
+
+// Tempo de duração de cada tipo de I/0
+#define disk_duration 4
+#define tape_duration 7
+#define printer_duration 6
+
+// Duração da unidade de tempo na simulação em milissegundos
+#define simulation_unit_time 500
+
 // Listas que recebem os dados de cada processo
-int priority[max_size];             // Guarda as prioridades
-int time_left[max_size];            // Guarda o tempo restante 
-int total_time[max_size];           // Guarda o tempo total 
-int input_time[max_size];           // Guarda o tempo de read_input_file 
-int disk_instant_time[max_size];    // Guarda o instante de uma I/O, disk
-int tape_instant_time[max_size];    // Guarda o instante de uma I/O, tape
-int printer_instant_time[max_size]; // Guarda o instante de uma I/O, printer
+int priority[max_size];                // Guarda as prioridades
+int time_left[max_size];               // Guarda o tempo restante 
+int total_time[max_size];              // Guarda o tempo total 
+int input_time[max_size];              // Guarda o tempo de read_input_file 
+int disk_instant_time[max_size];       // Guarda o instante de uma I/O, disk
+int tape_instant_time[max_size];       // Guarda o instante de uma I/O, tape
+int printer_instant_time[max_size];    // Guarda o instante de uma I/O, printer
 
 // Filas de execução
 int high_priority_queue[max_size];     // fila de alta prioridade
@@ -22,14 +35,6 @@ int printer_IO_queue[max_size];        // fila de I/O printer
 
 // guarda a quantidade de processos
 int size = 0;   
-
-// fatia de tempo do processo
-int time_slice = 5;
-
-// I/0 time duration
-int disk_duration = 4;
-int tape_duration = 7;
-int printer_duration = 6;
 
 //  Lê e trata o arquivo de entrada
 void read_input_file() {
@@ -51,11 +56,11 @@ void read_input_file() {
    }
 
    FILE *fPointer;
-   fPointer = fopen("test.txt", "r");
+   fPointer = fopen("input.txt", "r");
 
    char singleLine[150];
-   char *sub;
-   char *sub2;
+   char *sub_string;
+   char *sub_string2;
    int count;
    int pc = 0;
 
@@ -63,45 +68,45 @@ void read_input_file() {
       size +=1;
       fgets(singleLine, 150, fPointer);
       //  puts(singleLine);
-      sub = strtok(singleLine,";");
+      sub_string = strtok(singleLine,";");
       count = 0;
 
-      while(sub != NULL){
+      while(sub_string != NULL){
          count = count + 1;
 
-         //  printf ("SUB: %s\n", sub);
+         //  printf ("sub_string: %s\n", sub_string);
         
          switch (count){
             case 1:
                break;
 
             case 2:
-               priority[pc] = atoi(sub);
+               priority[pc] = atoi(sub_string);
                break;
 
             case 3:
-               time_left[pc] = atoi(sub);
-               total_time[pc] = atoi(sub);
+               time_left[pc] = atoi(sub_string);
+               total_time[pc] = atoi(sub_string);
                break;
 
             case 4:
-               input_time[pc] = atoi(sub);
+               input_time[pc] = atoi(sub_string);
                break;
 
             case 5:
-               disk_instant_time[pc] = atoi(sub);
+               disk_instant_time[pc] = atoi(sub_string);
                break;
 
             case 6:
-               tape_instant_time[pc] = atoi(sub);
+               tape_instant_time[pc] = atoi(sub_string);
                break;
 
             case 7:
-               printer_instant_time[pc] = atoi(sub);
+               printer_instant_time[pc] = atoi(sub_string);
                break; 
          }
 
-         sub = strtok(NULL,";");
+         sub_string = strtok(NULL,";");
       }
       // printf ("count: %d\n",count);
       pc+=1;
@@ -148,7 +153,7 @@ int change_running_process(){
    return pid - 1;
 }
 
-// reordena a lista pelo processo de menor prioridade
+// Reordena a lista pelo processo de menor prioridade
 void append_by_priority(int process[]){
    int i;
    for(i=0;i<size;i++){
@@ -179,19 +184,13 @@ int main(){
 
    read_input_file();
 
-   // if(1){
-   //    int pri[6] = {1,2,0,4,0,6};
-   //    append_by_priority(pri);
-   //    printf("[%d,%d,%d,%d,%d,%d]",pri[0],pri[1],pri[2],pri[3],pri[4],pri[5]);
-   // }
-
    FILE *fp;
    fp = fopen("output", "w");
    
    // Guarda o tempo total de processo restante
    int total_time_left = 0;
 
-   // Guarda o index do processo em execução
+   // Guarda o id do processo em execução
    int pid = -1;
 
    // Guarda a unidade de tempo em que se encontra a execução
@@ -208,17 +207,18 @@ int main(){
    printf("|     ");
    int j;
    for(j=1;j<=size;j++){
-      fprintf(fp,"P%d  ",j);
-      printf("P%d  ",j);
+        fprintf(fp,"P%d  ",j);
+        printf("P%d  ",j);
    }
    fprintf(fp,"|");
    fprintf(fp," Disk Tape Printer |\n");
    printf("|");
    printf(" Disk Tape Printer |\n");
 
-   //checa se existe algum processo com Tempo de chegada 0
+   // Checa se existe algum processo com tempo de chegada 0
    int i;
-   int temp_queue_append[size];
+   int* temp_queue_append;
+   temp_queue_append = (int*)calloc(size, sizeof(int));
    for(i = 0;i<size;i++){
       if(input_time[i] == 0){
          temp_queue_append[i] = i+1;
@@ -257,7 +257,8 @@ int main(){
 
       // Checa se houve a entrada de um processo novo
       int i;
-      int temp_queue_append[size];
+      int* temp_queue_append;
+      temp_queue_append = (int*)calloc(size, sizeof(int));
       for(i = 0;i<size;i++){
          if(input_time[i] == running_current_time){
             temp_queue_append[i] = i+1;
@@ -315,7 +316,7 @@ int main(){
          printf("      |\n");
       }
 
-      // caso 2 processos saiam de uma I/O de alta prioridade é decidido pela prioridade sua posição
+      // Caso dois processos saiam de uma I/O de alta prioridade é decidido pela prioridade sua posição
       if(printer_end != 0 || tape_end != 0){
          if(printer_end == 0){
             append(high_priority_queue, tape_end);
@@ -383,6 +384,9 @@ int main(){
       
       // Incrementa o contador do ciclo atual
       process_cicle_timer+=1;
+      
+      Sleep(simulation_unit_time);
+
    }while(1);
 
    fclose(fp);
