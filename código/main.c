@@ -60,7 +60,6 @@ void read_input_file() {
 
    char singleLine[150];
    char *sub_string;
-   char *sub_string2;
    int count;
    int pc = 0;
 
